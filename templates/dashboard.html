@@ -4,15 +4,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <title>Employee Admin Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <script
+        src="{{ url_for('static', filename='script.js') }}"
+        defer
+    ></script>
 </head>
-<body>
-    <div class="login-container">
-        <h1>Admin Dashboard</h1>
-        <p>Login successful!</p>
-        <p>Welcome to Employee Management.</p>
-        <a href="/logout">Logout</a>
+
+<body class="dashboard-page">
+
+    <div class="dashboard-container">
+
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+            <div>
+                <h1>Employee Management System</h1>
+                <p>Admin Dashboard</p>
+            </div>
+
+            <a href="{{ url_for('logout') }}" class="logout-button">
+                Logout
+            </a>
+        </header>
+
+        <!-- Add / Update Employee Form -->
+        <section class="employee-form">
+
+            <h2 id="form-heading">Add New Employee</h2>
+
+            <form id="employee-form">
+
+                <!-- Hidden field for editing an employee -->
+                <input type="hidden" id="employee-id" name="id">
+
+                <div class="form-group">
+                    <label for="name">Employee Name</label>
+                    <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        placeholder="Enter employee name"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="Enter email address"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="department">Department</label>
+                    <input
+                        type="text"
+                        id="department"
+                        name="department"
+                        placeholder="Enter department"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="salary">Salary</label>
+                    <input
+                        type="number"
+                        id="salary"
+                        name="salary"
+                        placeholder="Enter salary"
+                        min="0"
+                        step="0.01"
+                        required
+                    >
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit" id="save-button">
+                        Add Employee
+                    </button>
+
+                    <button
+                        type="button"
+                        id="cancel-button"
+                        hidden
+                    >
+                        Cancel
+                    </button>
+                </div>
+
+                <p id="message" role="status" aria-live="polite"></p>
+
+            </form>
+        </section>
+
+        <!-- Employee Records Table -->
+        <section class="employee-list">
+
+            <h2>Employee Records</h2>
+
+            <div class="table-wrapper">
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Employee Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Salary</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="employee-table-body">
+                        <!-- JavaScript loads employee records here -->
+                    </tbody>
+                </table>
+
+            </div>
+
+            <p id="table-message">
+                Loading employee records...
+            </p>
+
+        </section>
+
+        <!-- Footer -->
+        <footer class="dashboard-footer">
+            <p>Employee Management System | Admin Panel</p>
+        </footer>
+
     </div>
+
 </body>
 </html>
