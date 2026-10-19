@@ -17,4 +17,3 @@ VALUES
 ('Rahul Raj', 'rahul@example.com', 'Finance', 35000.00);
 
 SELECT * FROM employees;
-    

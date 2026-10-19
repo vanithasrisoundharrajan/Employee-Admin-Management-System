@@ -187,4 +187,3 @@ cancelButton.addEventListener("click", () => {
 });
 
 loadEmployees();
-    
