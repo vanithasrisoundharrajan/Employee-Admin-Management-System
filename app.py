@@ -188,6 +188,47 @@ def logout():
     session.clear()
     return redirect("/login")
 
+@app.route("/api/employees/<int:employee_id>", methods=["DELETE"])
+def delete_employee(employee_id):
+    if not session.get("admin"):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    connection = None
+    cursor = None
+
+    try:
+        connection = get_db_connection()
+        cursor = connection.cursor()
+
+        cursor.execute(
+            "DELETE FROM employees WHERE id = %s",
+            (employee_id,)
+        )
+
+        if cursor.rowcount == 0:
+            connection.rollback()
+            return jsonify({"error": "Employee not found"}), 404
+
+        connection.commit()
+        return jsonify({
+            "success": True,
+            "message": "Employee deleted successfully"
+        }), 200
+
+    except Exception:
+        if connection is not None and connection.is_connected():
+            connection.rollback()
+
+        app.logger.exception("Failed to delete employee")
+        return jsonify({"error": "Could not delete employee"}), 500
+
+    finally:
+        if cursor is not None:
+            cursor.close()
+
+        if connection is not None and connection.is_connected():
+            connection.close()
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
