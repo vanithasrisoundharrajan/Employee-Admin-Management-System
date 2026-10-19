@@ -11,6 +11,18 @@ function showMessage(text) {
     message.textContent = text;
 }
 
+async function readApiResponse(response) {
+    const contentType = response.headers.get("content-type") || "";
+
+    if (!contentType.includes("application/json")) {
+        const body = await response.text();
+        console.error("Unexpected API response:", response.status, body);
+        throw new Error(`Unexpected server response (HTTP ${response.status}).`);
+    }
+
+    return response.json();
+}
+
 function resetForm() {
     form.reset();
     employeeId.value = "";
@@ -20,19 +32,35 @@ function resetForm() {
 }
 
 async function loadEmployees() {
+    tableBody.replaceChildren();
+    showMessage("Loading employees...");
+
     try {
-        const response = await fetch("/api/employees");
+        const response = await fetch("/api/employees", {
+            credentials: "same-origin",
+            headers: { Accept: "application/json" }
+        });
+
+        const employees = await readApiResponse(response);
 
         if (!response.ok) {
-            throw new Error(
-                response.status === 401
-                    ? "Please log in again."
-                    : "Could not load employees."
-            );
+            throw new Error(employees.error || "Could not load employees.");
         }
 
-        const employees = await response.json();
-        tableBody.replaceChildren();
+        if (!Array.isArray(employees)) {
+            throw new Error("Unexpected employee data.");
+        }
+
+        if (employees.length === 0) {
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+            cell.colSpan = 6;
+            cell.textContent = "No employee records yet.";
+            row.appendChild(cell);
+            tableBody.appendChild(row);
+            showMessage("No employee records found.");
+            return;
+        }
 
         employees.forEach(employee => {
             const row = document.createElement("tr");
@@ -52,14 +80,14 @@ async function loadEmployees() {
             const actions = document.createElement("td");
 
             const editButton = document.createElement("button");
-            editButton.textContent = "Edit";
             editButton.type = "button";
+            editButton.textContent = "Edit";
+
             editButton.addEventListener("click", () => {
                 employeeId.value = employee.id;
                 document.getElementById("name").value = employee.name;
                 document.getElementById("email").value = employee.email;
-                document.getElementById("department").value =
-                    employee.department;
+                document.getElementById("department").value = employee.department;
                 document.getElementById("salary").value = employee.salary;
 
                 formTitle.textContent = "Edit Employee";
@@ -70,22 +98,21 @@ async function loadEmployees() {
             });
 
             const deleteButton = document.createElement("button");
-            deleteButton.textContent = "Delete";
             deleteButton.type = "button";
+            deleteButton.textContent = "Delete";
+
             deleteButton.addEventListener("click", async () => {
                 if (!confirm("Delete this employee?")) return;
 
                 try {
-                    const result = await fetch(
-                        `/api/employees/${employee.id}`,
-                        { method: "DELETE" }
-                    );
+                    const result = await fetch(`/api/employees/${employee.id}`, {
+                        method: "DELETE",
+                        credentials: "same-origin",
+                        headers: { Accept: "application/json" }
+                    });
 
-                    const data = await result.json();
-
-                    if (!result.ok) {
-                        throw new Error(data.error || "Delete failed.");
-                    }
+                    const data = await readApiResponse(result);
+                    if (!result.ok) throw new Error(data.error || "Delete failed.");
 
                     showMessage(data.message);
                     await loadEmployees();
@@ -99,15 +126,10 @@ async function loadEmployees() {
             tableBody.appendChild(row);
         });
 
-        if (employees.length === 0) {
-            const row = document.createElement("tr");
-            const cell = document.createElement("td");
-            cell.colSpan = 6;
-            cell.textContent = "No employee records yet.";
-            row.appendChild(cell);
-            tableBody.appendChild(row);
-        }
+        showMessage(`Loaded ${employees.length} employee record(s).`);
+
     } catch (error) {
+        console.error("Load employees error:", error);
         showMessage(error.message);
     }
 }
@@ -123,30 +145,46 @@ form.addEventListener("submit", async event => {
         salary: document.getElementById("salary").value
     };
 
+    if (!employee.name || !employee.email ||
+        !employee.department || employee.salary === "") {
+        showMessage("Please fill in all fields.");
+        return;
+    }
+
+    saveButton.disabled = true;
+
     try {
         const response = await fetch(
             id ? `/api/employees/${id}` : "/api/employees",
             {
                 method: id ? "PUT" : "POST",
-                headers: { "Content-Type": "application/json" },
+                credentials: "same-origin",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json"
+                },
                 body: JSON.stringify(employee)
             }
         );
 
-        const data = await response.json();
+        const data = await readApiResponse(response);
+        if (!response.ok) throw new Error(data.error || "Could not save employee.");
 
-        if (!response.ok) {
-            throw new Error(data.error || "Could not save employee.");
-        }
-
-        showMessage(data.message);
         resetForm();
+        showMessage(data.message);
         await loadEmployees();
+
     } catch (error) {
         showMessage(error.message);
+    } finally {
+        saveButton.disabled = false;
     }
 });
 
-cancelButton.addEventListener("click", resetForm);
+cancelButton.addEventListener("click", () => {
+    resetForm();
+    showMessage("");
+});
 
 loadEmployees();
+    
